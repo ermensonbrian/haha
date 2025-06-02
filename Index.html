@@ -1,0 +1,266 @@
+<!DOCTYPE html><html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Mensagem Secreta</title>
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: #fff;
+      overflow: hidden;
+      background: #000;
+    }canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+.container {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.7);
+  padding: 30px;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 0 20px #fff3;
+  z-index: 1;
+  max-width: 400px;
+}
+
+input[type="password"] {
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  margin-top: 10px;
+  width: 80%;
+  text-align: center;
+}
+
+button {
+  padding: 10px 20px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #fff;
+  color: #000;
+  cursor: pointer;
+}
+
+.hidden-message {
+  display: none;
+  margin-top: 20px;
+  font-size: 1.2em;
+  line-height: 1.5em;
+}
+
+.emoji {
+  font-size: 50px;
+  animation: bounce 1s infinite alternate;
+  margin-top: 20px;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 80px);
+  gap: 5px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.cell {
+  width: 80px;
+  height: 80px;
+  background-color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2em;
+  cursor: pointer;
+  user-select: none;
+}
+
+.scoreboard {
+  margin-top: 15px;
+  font-size: 1.1em;
+}
+
+@keyframes bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-15px); }
+}
+
+  </style>
+</head>
+<body>
+  <canvas id="starCanvas"></canvas>  <div class="container">
+    <h1>💫 Mensagem Secreta 💫</h1>
+    <input type="password" id="password" placeholder="Digite a senha...">
+    <button onclick="checkPassword()">Entrar</button>
+    <div class="hidden-message" id="hiddenMessage">
+      <p>Só queria que soubesse que eu sou completamente apaixonado por você e que torço muito por você. Você é uma mina incrível e te admiro muito. Te amo.</p>
+      <div class="emoji">💖✨</div>
+      <h3>🎮 Quer jogar? Tente ganhar de mim no jogo da velha!</h3>
+      <div class="scoreboard">Placar: Thay <span id="thayScore">0</span> x <span id="brianScore">0</span> Brian</div>
+      <div class="board" id="board"></div>
+    </div>
+  </div>  <script>
+    let attempts = 0;
+    let thayScore = 0;
+    let brianScore = 0;
+    const board = Array(9).fill('');
+    const player = 'X';
+    const ai = 'O';
+
+    function checkPassword() {
+      const input = document.getElementById('password').value;
+      if (input.toLowerCase() === 'mimadinha') {
+        document.getElementById('hiddenMessage').style.display = 'block';
+        startGame();
+      } else {
+        alert('Senha incorreta! Tente novamente.');
+      }
+    }
+
+    function startGame() {
+      const boardDiv = document.getElementById('board');
+      boardDiv.innerHTML = '';
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.index = i;
+        cell.addEventListener('click', playerMove);
+        boardDiv.appendChild(cell);
+      }
+    }
+
+    function playerMove(e) {
+      const index = e.target.dataset.index;
+      if (board[index] === '') {
+        board[index] = player;
+        e.target.textContent = player;
+        if (!checkWinner(player)) {
+          aiMove();
+        }
+      }
+    }
+
+    function aiMove() {
+      let move = findBestMove();
+      board[move] = ai;
+      document.querySelectorAll('.cell')[move].textContent = ai;
+      checkWinner(ai);
+    }
+
+    function findBestMove() {
+      const winPatterns = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+      ];
+      for (let pattern of winPatterns) {
+        const [a, b, c] = pattern;
+        if (board[a] === ai && board[b] === ai && board[c] === '') return c;
+        if (board[a] === ai && board[b] === '' && board[c] === ai) return b;
+        if (board[a] === '' && board[b] === ai && board[c] === ai) return a;
+      }
+      for (let pattern of winPatterns) {
+        const [a, b, c] = pattern;
+        if (board[a] === player && board[b] === player && board[c] === '') return c;
+        if (board[a] === player && board[b] === '' && board[c] === player) return b;
+        if (board[a] === '' && board[b] === player && board[c] === player) return a;
+      }
+      const emptyIndices = board.map((val, idx) => val === '' ? idx : null).filter(v => v !== null);
+      return emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+    }
+
+    function checkWinner(currentPlayer) {
+      const winPatterns = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+      ];
+      for (let pattern of winPatterns) {
+        const [a, b, c] = pattern;
+        if (board[a] === currentPlayer && board[b] === currentPlayer && board[c] === currentPlayer) {
+          attempts++;
+          if (currentPlayer === player) {
+            thayScore++;
+            document.getElementById('thayScore').textContent = thayScore;
+          } else {
+            brianScore++;
+            document.getElementById('brianScore').textContent = brianScore;
+          }
+          if (attempts >= 15) {
+            if (currentPlayer === ai) {
+              alert('Haha! Você não me ganhou aqui, mas já me ganhou na vida ❤️');
+            } else {
+              alert('Você venceu! ❤️');
+            }
+          }
+          resetBoard();
+          return true;
+        }
+      }
+      if (board.every(cell => cell !== '')) {
+        attempts++;
+        if (attempts >= 15) {
+          alert('Empatamos… quer dizer que somos feitos um para o outro? 😍');
+        }
+        resetBoard();
+        return true;
+      }
+      return false;
+    }
+
+    function resetBoard() {
+      for (let i = 0; i < 9; i++) {
+        board[i] = '';
+        document.querySelectorAll('.cell')[i].textContent = '';
+      }
+    }
+
+    const canvas = document.getElementById('starCanvas');
+    const ctx = canvas.getContext('2d');
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+
+    const stars = [];
+    for (let i = 0; i < 200; i++) {
+      stars.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        radius: Math.random() * 1.5,
+        opacity: Math.random(),
+        speed: Math.random() * 0.5
+      });
+    }
+
+    function animateStars() {
+      ctx.clearRect(0, 0, width, height);
+      for (let star of stars) {
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+        ctx.fill();
+        star.opacity += star.speed * (Math.random() > 0.5 ? 1 : -1);
+        if (star.opacity < 0) star.opacity = 0;
+        if (star.opacity > 1) star.opacity = 1;
+      }
+      requestAnimationFrame(animateStars);
+    }
+
+    animateStars();
+
+    window.addEventListener('resize', () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+    });
+  </script></body>
+</html>
